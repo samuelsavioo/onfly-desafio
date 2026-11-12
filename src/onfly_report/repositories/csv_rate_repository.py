@@ -1,39 +1,23 @@
-"""Leitura da exportação de reservas em CSV."""
+"""Leitura da tabela de taxas de câmbio em CSV."""
 
 from __future__ import annotations
 
 import csv
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from ..exceptions import InputFileError
-from ..models import RawRow
 
-REQUIRED_COLUMNS = (
-    "reservation_id",
-    "traveler_name",
-    "company_id",
-    "hotel_id",
-    "hotel_name",
-    "city",
-    "country",
-    "checkin_date",
-    "checkout_date",
-    "rooms",
-    "status",
-    "currency",
-    "amount",
-    "payment_method",
-    "booked_at",
-)
+REQUIRED_COLUMNS = ("currency", "rate_to_brl")
 
 
-class CsvReservationRepository:
-    """Lê a exportação de reservas sem aplicar regra de negócio."""
+class CsvRateRepository:
+    """Lê as taxas de câmbio e devolve um mapa moeda -> Decimal."""
 
     def __init__(self, path: Path) -> None:
         self._path = path
 
-    def read(self) -> list[RawRow]:
+    def read(self) -> dict[str, Decimal]:
         try:
             with self._path.open("r", encoding="utf-8", newline="") as handle:
                 reader = csv.DictReader(handle)
@@ -41,11 +25,20 @@ class CsvReservationRepository:
                 if missing:
                     raise InputFileError(f"colunas obrigatórias ausentes: {', '.join(missing)}")
 
-                rows: list[RawRow] = []
-                for values in reader:
-                    rows.append(RawRow(line_number=reader.line_num, values=values))
-                return rows
+                rates: dict[str, Decimal] = {}
+                for row in reader:
+                    currency = (row.get("currency") or "").strip()
+                    raw_rate = (row.get("rate_to_brl") or "").strip()
+                    if not currency or not raw_rate:
+                        raise InputFileError(f"linha {reader.line_num}: taxa de câmbio inválida")
+                    try:
+                        rates[currency] = Decimal(raw_rate)
+                    except InvalidOperation as err:
+                        raise InputFileError(
+                            f"linha {reader.line_num}: taxa inválida '{raw_rate}'"
+                        ) from err
+                return rates
         except FileNotFoundError as err:
-            raise InputFileError(f"arquivo de reservas não encontrado: {self._path}") from err
+            raise InputFileError(f"arquivo de taxas não encontrado: {self._path}") from err
         except (OSError, csv.Error) as err:
             raise InputFileError(f"falha ao ler {self._path}: {err}") from err

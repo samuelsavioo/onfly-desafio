@@ -4,7 +4,7 @@
 
 - **Ferramenta:** Claude (Anthropic), pela interface de chat claude.ai / app Claude.
 - **Modelo:** Claude Sonnet 5.5.
-- **Sessão exportada:** `entrega/uso-de-ia/sessao.md` (conversa completa de prompts e respostas).
+- **Sessão exportada:** `[entrega/uso-de-ia/sessao.md](https://claude.ai/share/54577186-891a-4e05-93b6-291379685d64)` (conversa completa de prompts e respostas).
 
 ## O que a IA fez
 
